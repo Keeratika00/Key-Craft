@@ -185,7 +185,7 @@ function spawnItem(isJunk){
    x:Math.random()*(innerWidth-200)+100,
    y:-60,
    size:80,
-   speedDown: Math.random()*160 + 200,   // 👈 ตกลง (px / sec)
+   speedDown: Math.random()*180 + 200,   // 👈 ตกลง (px / sec)
    speedUp:  -(Math.random()*220 + 260), // 👈 ลอยขึ้น (px / sec)
    turnY:innerHeight*(Math.random()*0.2+0.45),
    phase:'down',
@@ -364,6 +364,7 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
+
 
 
 
