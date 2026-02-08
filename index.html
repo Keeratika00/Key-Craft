@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Key & Craft - Mobile Version</title>
+<title>Key & Craft - Hybrid Version</title>
 
 <style>
   html, body {
@@ -20,6 +20,7 @@
     background: linear-gradient(#0b2340, #041020);
   }
 
+  /* หน้าจอเริ่มและหน้าสรุป */
   #startScreen, #summary {
     position: fixed;
     inset: 0;
@@ -51,9 +52,27 @@
     flex-direction: column;
     gap: 12px;
     border-top: 2px solid #333;
+    z-index: 50;
   }
 
-  /* แถบโชว์ของที่เก็บได้ (อยู่บนปุ่มเลข) */
+  /* --- หัวใจหลัก: สลับการแสดงผลระหว่าง PC และ มือถือ --- */
+  
+  /* กรณีหน้าจอใหญ่ (มากกว่า 768px หรือ PC) ให้ซ่อนปุ่มตัวเลข */
+  @media (min-width: 769px) {
+    #numpad {
+      display: none !important;
+    }
+    #controls {
+      background: transparent; /* ให้ดูโล่งๆ บน PC */
+      border: none;
+      pointer-events: none; /* เพื่อให้คลิกผ่านไปโดน Canvas ได้ */
+    }
+    #bottomBar {
+      pointer-events: auto; /* แต่ยังให้เลื่อนดูไอเทมได้ */
+    }
+  }
+
+  /* แถบโชว์ของที่เก็บได้ */
   #bottomBar {
     height: 65px;
     display: flex;
@@ -78,12 +97,12 @@
     height: 40px;
   }
 
-  /* ปุ่มกดตัวเลขแบบ 3 คอลัมน์ (Mobile Numpad) */
+  /* ปุ่มกดตัวเลขแบบบังคับ 3 คอลัมน์ */
   #numpad {
     display: grid;
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, 1fr); /* บังคับ 3 คอลัมน์ */
     gap: 10px;
-    max-width: 300px; /* บีบให้ทรงเหมือนมือถือ */
+    max-width: 280px; 
     margin: 0 auto;
     width: 100%;
   }
@@ -92,26 +111,25 @@
     background: #444;
     color: white;
     border: none;
-    height: 60px; /* ความสูงพอดีนิ้ว */
+    height: 55px;
     font-size: 24px;
     font-weight: bold;
     border-radius: 12px;
     box-shadow: 0 4px 0 #222;
     cursor: pointer;
-    transition: background 0.1s, transform 0.05s;
+    transition: background 0.1s;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
   }
 
-  /* สีปุ่มตอนถูกกด */
   .numBtn.active {
-    background: #ffcc00;
-    color: #000;
-    transform: translateY(3px); /* ยุบลงเหมือนกดปุ่มจริง */
+    background: #ffcc00 !important;
+    color: #000 !important;
+    transform: translateY(3px);
     box-shadow: 0 1px 0 #222;
   }
 
-  /* วางเลข 0 ไว้ตรงกลางแถวสุดท้าย */
+  /* วางเลข 0 ไว้ตรงกลางแถวที่ 4 */
   .numBtn[data-val="0"] {
     grid-column: 2;
   }
@@ -121,7 +139,6 @@
     top: 12px;
     left: 12px;
     font-size: 22px;
-    text-shadow: 1px 1px 2px #000;
   }
 </style>
 </head>
@@ -134,7 +151,7 @@
 <div id="startScreen">
   <div style="text-align:center">
     <h1>Key & Craft</h1>
-    <p>จิ้มตัวเลขบนจอเพื่อเก็บอุปกรณ์</p>
+    <p>พิมพ์ตัวเลขให้ตรงกับไอเทม</p>
     <div class="button" id="startBtn">เริ่มเกม</div>
   </div>
 </div>
@@ -218,7 +235,7 @@ function spawnItem(isJunk){
    isJunk, img:imgSrc, x:Math.random()*(innerWidth-100)+50, y:-60, size:70,
    speedDown: Math.random()*150 + 200,
    speedUp: -(Math.random()*200 + 250),
-   turnY: innerHeight * 0.35, // ปรับให้สูงขึ้นนิดนึงไม่ให้บังแผงปุ่ม
+   turnY: innerHeight * 0.35, 
    phase:'down', alive:true
  });
 }
