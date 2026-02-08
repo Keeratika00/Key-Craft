@@ -220,7 +220,7 @@ function spawnItem(isJunk){
  items.push({
    number:Math.floor(Math.random()*99)+1,
    isJunk, img:imgSrc, x:Math.random()*(innerWidth-100)+50, y:-60, size:70,
-   speedDown: Math.random()*150 + 200,
+   speedDown: Math.random()*120 + 180,
    speedUp: -(Math.random()*200 + 250),
    turnY: innerHeight * 0.3, 
    phase:'down', alive:true
@@ -357,3 +357,4 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
+
