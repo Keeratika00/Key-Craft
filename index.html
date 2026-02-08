@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Key & Craft - Mobile Fixed</title>
+<title>Key & Craft - Ultimate Edition</title>
 
 <style>
   html, body {
@@ -40,31 +40,35 @@
     margin-top: 16px;
   }
 
-  /* ส่วนควบคุมด้านล่าง */
+  /* ส่วนควบคุมด้านล่าง (Mobile Numpad + Inventory) */
   #controls {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     background: #1a1a1a;
-    padding: 10px 5px; /* ลด padding ข้างลง */
+    padding: 10px 5px;
     display: flex;
     flex-direction: column;
     gap: 8px;
     border-top: 2px solid #333;
     z-index: 50;
-    align-items: center; /* จัดให้ numpad อยู่กลางจอ */
+    align-items: center;
   }
 
-  /* ซ่อน numpad บน PC */
-  @media (min-width: 769px) {
-    #numpad { display: none !important; }
-    #controls { background: transparent; border: none; pointer-events: none; }
-    #bottomBar { pointer-events: auto; }
+  /* หัวใจ (Top Bar) ขนาดปกติสำหรับมือถือ */
+  #topBar {
+    position: fixed;
+    top: 12px;
+    left: 12px;
+    font-size: 22px;
+    text-shadow: 1px 1px 2px #000;
+    z-index: 10;
   }
 
+  /* แถบโชว์ของที่เก็บได้ */
   #bottomBar {
-    height: 60px;
+    height: 65px;
     display: flex;
     gap: 8px;
     justify-content: center;
@@ -73,43 +77,47 @@
     width: 100%;
   }
 
+  /* ไอเทมการ์ดขนาดปกติสำหรับมือถือ */
   .itemCard {
-    width: 45px;
-    height: 45px;
-    border-radius: 8px;
+    width: 50px;
+    height: 50px;
+    border-radius: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #333;
     flex-shrink: 0;
+    transition: all 0.2s;
   }
-  .itemCard img { width: 35px; height: 35px; }
+  .itemCard img {
+    width: 40px;
+    height: 40px;
+    object-fit: contain;
+  }
 
-  /* แก้ไข Grid ตรงนี้เพื่อบังคับ 3 แถว */
+  /* Numpad บังคับ 3 คอลัมน์ */
   #numpad {
-    display: grid;
-    /* บังคับ 3 คอลัมน์แบบเป๊ะๆ */
-    grid-template-columns: repeat(3, 1fr); 
-    gap: 6px; /* ลดช่องว่างลงเพื่อประหยัดพื้นที่ */
-    width: 95%; /* ใช้พื้นที่เกือบเต็มแต่ไม่ล้น */
-    max-width: 260px; /* บีบขนาดให้ไม่ล้นหน้าจอมือถือเล็กๆ */
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 280px !important;
+    margin: 0 auto !important;
   }
 
   .numBtn {
     background: #444;
     color: white;
     border: none;
-    height: 50px; /* ลดความสูงลงเล็กน้อย */
-    font-size: 22px;
+    height: 55px;
+    font-size: 24px;
     font-weight: bold;
-    border-radius: 10px;
+    border-radius: 12px;
     box-shadow: 0 4px 0 #222;
     cursor: pointer;
+    transition: background 0.1s, transform 0.05s;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
-    display: flex;
-    align-items: center;
-    justify-content: center;
   }
 
   .numBtn.active {
@@ -119,19 +127,43 @@
     box-shadow: 0 1px 0 #222;
   }
 
-  /* บังคับเลข 0 อยู่แถว 4 ตรงกลาง */
   .numBtn[data-val="0"] {
     grid-column: 2;
   }
 
-  #topBar {
-    position: fixed;
-    top: 12px;
-    left: 12px;
-    font-size: 22px;
+  /* --- ปรับแต่งสำหรับ PC (หน้าจอใหญ่) --- */
+  @media (min-width: 769px) {
+    #numpad {
+      display: none !important; /* ซ่อนปุ่มบน PC */
+    }
+    #controls {
+      background: transparent;
+      border: none;
+      pointer-events: none;
+    }
+    #bottomBar {
+      height: 140px;
+      pointer-events: auto;
+    }
+    #topBar {
+      top: 20px;
+      left: 20px;
+      font-size: 45px; /* หัวใจใหญ่ขึ้นมากใน PC */
+    }
+    .itemCard {
+      width: 110px; /* รูปที่เก็บได้ใหญ่ขึ้นใน PC */
+      height: 110px;
+    }
+    .itemCard img {
+      width: 90px;
+      height: 90px;
+    }
+    h1 { font-size: 3.5rem; }
+    p { font-size: 1.5rem; }
   }
 </style>
 </head>
+
 <body>
 
 <canvas id="c"></canvas>
@@ -140,7 +172,7 @@
 <div id="startScreen">
   <div style="text-align:center">
     <h1>Key & Craft</h1>
-    <p>กดตัวเลขเพื่อเก็บอุปกรณ์</p>
+    <p>พิมพ์ตัวเลขให้ตรงกับไอเทมเพื่อเก็บอุปกรณ์</p>
     <div class="button" id="startBtn">เริ่มเกม</div>
   </div>
 </div>
@@ -163,14 +195,14 @@
 
 <div id="summary" style="display:none">
   <div style="text-align:center">
-    <h2>อุปกรณ์ที่เลือกทั้งหมด</h2>
+    <h2>อุปกรณ์ที่คุณเลือก</h2>
     <div id="summaryList" style="display:flex;gap:12px;flex-wrap:wrap;justify-content:center;margin-bottom:20px;"></div>
     <div class="button" id="restartBtn">เล่นอีกครั้ง</div>
   </div>
 </div>
 
 <script>
-/* โค้ด JavaScript ทั้งหมดเหมือนเดิม (ตัดมาให้สั้นลงเพื่อความสะดวก) */
+/* ================= SETUP ================= */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let dpr = window.devicePixelRatio || 1;
@@ -185,6 +217,7 @@ function resize(){
 resize();
 window.onresize = resize;
 
+/* ================= DATA ================= */
 const categories = [
  {key:'Mouse',label:'Mouse',imgs:['images/mouse/mouse1.png','images/mouse/mouse2.png','images/mouse/mouse3.png','images/mouse/mouse4.png','images/mouse/mouse5.png']},
  {key:'Keyboard',label:'Keyboard',imgs:['images/keyboard/kb1.png','images/keyboard/kb2.png','images/keyboard/kb3.png','images/keyboard/kb4.png','images/keyboard/kb5.png']},
@@ -200,10 +233,12 @@ const imageCache={};
  const img=new Image(); img.src=src; imageCache[src]=img;
 });
 
+/* ================= STATE ================= */
 const MAX_HEARTS=3;
 let hearts=MAX_HEARTS, queue=[], current=null, items=[], collected={}, state='start';
 let inputBuffer='', inputTimer=null, particles=[], shake=0, redFlash=0, spawnImagePool=[];
 
+/* ================= LOGIC ================= */
 function spawnScene(){
  items=[];
  spawnImagePool=[...current.imgs].sort(()=>Math.random()-0.5);
@@ -220,9 +255,9 @@ function spawnItem(isJunk){
  items.push({
    number:Math.floor(Math.random()*99)+1,
    isJunk, img:imgSrc, x:Math.random()*(innerWidth-100)+50, y:-60, size:70,
-   speedDown: Math.random()*120 + 180,
+   speedDown: Math.random()*150 + 200,
    speedUp: -(Math.random()*200 + 250),
-   turnY: innerHeight * 0.3, 
+   turnY: innerHeight * 0.35, 
    phase:'down', alive:true
  });
 }
@@ -235,13 +270,16 @@ function explode(x,y,color){
 
 function handleDigitInput(digit) {
   if(state !== 'game') return;
+
   const btn = document.querySelector(`.numBtn[data-val="${digit}"]`);
   if(btn) {
     btn.classList.add('active');
     setTimeout(() => btn.classList.remove('active'), 100);
   }
+
   inputBuffer += digit;
   clearTimeout(inputTimer);
+
   inputTimer = setTimeout(() => {
     const num = parseInt(inputBuffer);
     inputBuffer = '';
@@ -273,6 +311,7 @@ window.addEventListener('keydown', e => {
   if(/^\d$/.test(e.key)) handleDigitInput(e.key);
 });
 
+/* ================= UPDATE & DRAW ================= */
 function update(dt){
  if(state!=='game')return;
  items.forEach(it=>{
@@ -294,23 +333,37 @@ function update(dt){
 function draw(){
  ctx.clearRect(0,0,innerWidth,innerHeight);
  if(state!=='game')return;
+ 
  if(shake>0){ ctx.save(); ctx.translate(Math.random()*8-4,Math.random()*8-4); }
+ 
  items.forEach(it=>{
    if(!it.alive)return;
    const img=imageCache[it.img];
+   
+   // ขยายขนาดไอเทมใน PC
+   let displaySize = innerWidth > 768 ? it.size * 1.5 : it.size;
+
    if(img && img.complete){
-     ctx.drawImage(img,it.x-it.size/2,it.y-it.size/2,it.size,it.size);
-     if(it.isJunk){ ctx.strokeStyle='red'; ctx.lineWidth=3; ctx.strokeRect(it.x-it.size/2,it.y-it.size/2,it.size,it.size); }
+     ctx.drawImage(img,it.x-displaySize/2,it.y-displaySize/2,displaySize,displaySize);
+     if(it.isJunk){ ctx.strokeStyle='red'; ctx.lineWidth=3; ctx.strokeRect(it.x-displaySize/2,it.y-displaySize/2,displaySize,displaySize); }
    }
+   
    ctx.fillStyle=it.isJunk?'#ff4444':'#fff';
-   ctx.font='bold 22px sans-serif'; ctx.textAlign='center';
-   ctx.fillText(it.number, it.x, it.y+it.size/2+25);
+   
+   // ปรับขนาดฟอนต์ตัวเลขตามอุปกรณ์
+   let fontSize = innerWidth > 768 ? '40px' : '22px'; 
+   ctx.font = `bold ${fontSize} sans-serif`;
+   
+   ctx.textAlign='center';
+   ctx.fillText(it.number, it.x, it.y+displaySize/2+(innerWidth > 768 ? 45 : 25));
  });
+ 
  particles.forEach(p=>{ ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,4,4); });
  if(shake>0)ctx.restore();
  if(redFlash>0){ ctx.strokeStyle='rgba(255,0,0,0.5)'; ctx.lineWidth=10; ctx.strokeRect(0,0,innerWidth,innerHeight); }
 }
 
+/* ================= FLOW ================= */
 function collectCurrent(imgSrc){
  if(collected[current.key])return;
  collected[current.key]={img:imgSrc};
@@ -357,4 +410,3 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
-
