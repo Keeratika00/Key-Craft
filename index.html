@@ -94,9 +94,14 @@ canvas{
 /* ================= SETUP ================= */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
+
+let dpr = window.devicePixelRatio || 1;
 function resize(){
-  canvas.width = innerWidth;
-  canvas.height = innerHeight;
+  canvas.width = innerWidth * dpr;
+  canvas.height = innerHeight * dpr;
+  canvas.style.width = innerWidth+'px';
+  canvas.style.height = innerHeight+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
 }
 resize();
 window.onresize = resize;
@@ -149,8 +154,6 @@ let queue=[],current=null,items=[],collected={};
 let state='start';
 let inputBuffer='',inputTimer=null;
 let particles=[],shake=0,redFlash=0;
-
-/* pool กันรูปซ้ำในรอบเดียว */
 let spawnImagePool=[];
 
 /* ================= SPAWN ================= */
@@ -161,7 +164,6 @@ function randomFrom(arr){
 function spawnScene(){
  items=[];
  let count=0;
-
  spawnImagePool=[...current.imgs].sort(()=>Math.random()-0.5);
 
  const iv=setInterval(()=>{
@@ -172,26 +174,20 @@ function spawnScene(){
 }
 
 function spawnItem(isJunk){
- let imgSrc;
-
- if(isJunk){
-   imgSrc=randomFrom(junkImages);
- }else{
-   imgSrc=spawnImagePool.length
-     ? spawnImagePool.shift()
-     : randomFrom(current.imgs);
- }
+ let imgSrc = isJunk
+   ? randomFrom(junkImages)
+   : (spawnImagePool.length ? spawnImagePool.shift() : randomFrom(current.imgs));
 
  items.push({
    number:Math.floor(Math.random()*99)+1,
    isJunk,
    img:imgSrc,
-   x:Math.random()*(canvas.width-200)+100,
+   x:Math.random()*(innerWidth-200)+100,
    y:-60,
    size:80,
-   speedDown:Math.random()*2.0+1.5,
-   speedUp:-(Math.random()*2.8+2.2),
-   turnY:canvas.height*(Math.random()*0.2+0.45),
+   speedDown:Math.random()*90+120,   // px/sec
+   speedUp:-(Math.random()*160+180), // px/sec
+   turnY:innerHeight*(Math.random()*0.2+0.45),
    phase:'down',
    alive:true
  });
@@ -202,32 +198,35 @@ function explode(x,y,color){
  for(let i=0;i<16;i++){
    particles.push({
      x,y,
-     vx:(Math.random()-0.5)*6,
-     vy:(Math.random()-0.5)*6,
-     life:30,
+     vx:(Math.random()-0.5)*360,
+     vy:(Math.random()-0.5)*360,
+     life:0.5,
      color
    });
  }
 }
 
 /* ================= UPDATE ================= */
-function update(){
+function update(dt){
  if(state!=='game')return;
 
  items.forEach(it=>{
    if(!it.alive)return;
-   it.y+=it.phase==='down'?it.speedDown:it.speedUp;
+   it.y += (it.phase==='down'?it.speedDown:it.speedUp)*dt;
    if(it.phase==='down'&&it.y>it.turnY)it.phase='up';
    if(it.y<-120)it.alive=false;
  });
 
  particles.forEach(p=>{
-   p.x+=p.vx;p.y+=p.vy;p.vy+=0.2;p.life--;
+   p.x+=p.vx*dt;
+   p.y+=p.vy*dt;
+   p.vy+=800*dt;
+   p.life-=dt;
  });
  particles=particles.filter(p=>p.life>0);
 
- if(shake>0)shake--;
- if(redFlash>0)redFlash--;
+ if(shake>0)shake-=dt*60;
+ if(redFlash>0)redFlash-=dt*60;
 
  if(items.length&&!items.some(i=>i.alive)){
    if(!collected[current.key])queue.push(current);
@@ -237,7 +236,7 @@ function update(){
 
 /* ================= DRAW ================= */
 function draw(){
- ctx.clearRect(0,0,canvas.width,canvas.height);
+ ctx.clearRect(0,0,innerWidth,innerHeight);
  if(state!=='game')return;
 
  if(shake>0){
@@ -247,26 +246,22 @@ function draw(){
 
  items.forEach(it=>{
    if(!it.alive)return;
-
    const img=imageCache[it.img];
-   const half=it.size/2;
+   const h=it.size/2;
 
-   if(img&&img.complete){
-     ctx.drawImage(img,it.x-half,it.y-half,it.size,it.size);
-
-     /* 🔴 ขอบแดงเฉพาะขยะ */
+   if(img && img.complete && img.naturalWidth){
+     ctx.drawImage(img,it.x-h,it.y-h,it.size,it.size);
      if(it.isJunk){
        ctx.strokeStyle='red';
        ctx.lineWidth=4;
-       ctx.strokeRect(it.x-half,it.y-half,it.size,it.size);
+       ctx.strokeRect(it.x-h,it.y-h,it.size,it.size);
      }
    }
 
-   /* ตัวเลขใต้รูป */
-   ctx.fillStyle = it.isJunk ? '#ff4444' : '#ffffff';
+   ctx.fillStyle=it.isJunk?'#ff4444':'#fff';
    ctx.font='bold 20px sans-serif';
    ctx.textAlign='center';
-   ctx.fillText(it.number,it.x,it.y + half + 28);
+   ctx.fillText(it.number,it.x,it.y+h+28);
  });
 
  particles.forEach(p=>{
@@ -278,7 +273,7 @@ function draw(){
  if(redFlash>0){
    ctx.strokeStyle='rgba(255,0,0,0.5)';
    ctx.lineWidth=10;
-   ctx.strokeRect(0,0,canvas.width,canvas.height);
+   ctx.strokeRect(0,0,innerWidth,innerHeight);
  }
 }
 
@@ -311,7 +306,6 @@ window.addEventListener('keydown',e=>{
 function collectCurrent(img){
  if(collected[current.key])return;
  collected[current.key]={img};
-
  const card=document.createElement('div');
  card.className='itemCard';
  const im=document.createElement('img');
@@ -357,10 +351,16 @@ startBtn.onclick=()=>{
 };
 restartBtn.onclick=()=>location.reload();
 
-function loop(){update();draw();requestAnimationFrame(loop);}
-loop();
+/* ================= LOOP ================= */
+let last=performance.now();
+function loop(t){
+ const dt=(t-last)/1000;
+ last=t;
+ update(dt);
+ draw();
+ requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
 </script>
 </body>
 </html>
-
-
