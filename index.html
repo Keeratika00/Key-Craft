@@ -63,20 +63,37 @@ canvas{
   font-size:22px;
 }
 
-/* ===== Mobile Number Pad ===== */
-#numPad{
+/* ===== Mobile Input ===== */
+#mobileUI{
   position:fixed;
-  bottom:140px;
-  left:0; right:0;
-  display:grid;
-  grid-template-columns:repeat(5,60px);
+  left:0; right:0; bottom:0;
+  display:none;
+  flex-direction:column;
+  align-items:center;
   gap:10px;
-  justify-content:center;
+  padding-bottom:12px;
 }
+
+/* ตัวเลขที่กดแล้ว */
+#inputDisplay{
+  font-size:28px;
+  font-weight:700;
+  min-height:34px;
+  letter-spacing:4px;
+}
+
+/* แผงปุ่ม */
+#numPad{
+  display:grid;
+  grid-template-columns:repeat(5,64px);
+  gap:10px;
+}
+
+/* ปุ่มเลข */
 .numBtn{
-  width:60px;
-  height:60px;
-  border-radius:14px;
+  width:64px;
+  height:64px;
+  border-radius:16px;
   background:#333;
   color:#fff;
   font-size:22px;
@@ -85,8 +102,12 @@ canvas{
   align-items:center;
   justify-content:center;
   user-select:none;
+  transition:0.15s;
 }
-.numBtn:active{ background:#1e90ff; }
+.numBtn.active{
+  background:#1e90ff;
+  transform:scale(0.9);
+}
 </style>
 </head>
 
@@ -104,7 +125,12 @@ canvas{
 </div>
 
 <div id="bottomBar"></div>
-<div id="numPad"></div>
+
+<!-- ===== Mobile UI ===== -->
+<div id="mobileUI">
+  <div id="inputDisplay"></div>
+  <div id="numPad"></div>
+</div>
 
 <div id="summary" style="display:none">
   <div style="text-align:center">
@@ -121,32 +147,23 @@ canvas{
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 
-let dpr = window.devicePixelRatio || 1;
 function resize(){
-  canvas.width = innerWidth * dpr;
-  canvas.height = innerHeight * dpr;
-  canvas.style.width = innerWidth+'px';
-  canvas.style.height = innerHeight+'px';
-  ctx.setTransform(dpr,0,0,dpr,0,0);
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
 }
 resize();
 window.onresize = resize;
 
 /* ================= DATA ================= */
-const categories = [
- {key:'Mouse',imgs:['images/mouse/mouse1.png','images/mouse/mouse2.png','images/mouse/mouse3.png','images/mouse/mouse4.png','images/mouse/mouse5.png']},
- {key:'Keyboard',imgs:['images/keyboard/kb1.png','images/keyboard/kb2.png','images/keyboard/kb3.png','images/keyboard/kb4.png','images/keyboard/kb5.png']},
- {key:'Mousepad',imgs:['images/mousepad/mp1.png','images/mousepad/mp2.png','images/mousepad/mp3.png','images/mousepad/mp4.png','images/mousepad/mp5.png']},
- {key:'Headset',imgs:['images/headset/hs1.png','images/headset/hs2.png','images/headset/hs3.png','images/headset/hs4.png','images/headset/hs5.png']},
- {key:'Controller',imgs:['images/controller/ct1.png','images/controller/ct2.png','images/controller/ct3.png','images/controller/ct4.png','images/controller/ct5.png']},
- {key:'Chair',imgs:['images/chair/ch1.png','images/chair/ch2.png','images/chair/ch3.png','images/chair/ch4.png','images/chair/ch5.png']}
+const categories=[
+ {key:'Mouse',imgs:['images/mouse/mouse1.png','images/mouse/mouse2.png','images/mouse/mouse3.png']},
+ {key:'Keyboard',imgs:['images/keyboard/kb1.png','images/keyboard/kb2.png','images/keyboard/kb3.png']}
 ];
 const junkImages=['images/junk/junk1.png','images/junk/junk2.png'];
 
-/* preload */
 const imageCache={};
 [...categories.flatMap(c=>c.imgs),...junkImages].forEach(src=>{
- const img=new Image(); img.src=src; imageCache[src]=img;
+ const i=new Image();i.src=src;imageCache[src]=i;
 });
 
 /* ================= STATE ================= */
@@ -155,64 +172,54 @@ let hearts=MAX_HEARTS;
 let queue=[],current=null,items=[],collected={};
 let state='start';
 let inputBuffer='',inputTimer=null;
-let particles=[],shake=0,redFlash=0;
 let spawnImagePool=[];
 
 /* ================= SPAWN ================= */
 function spawnScene(){
  items=[];
  spawnImagePool=[...current.imgs].sort(()=>Math.random()-0.5);
- let count=0;
+ let c=0;
  const iv=setInterval(()=>{
    spawnItem(Math.random()<0.4);
-   count++;
-   if(count>=5) clearInterval(iv);
+   if(++c>=5) clearInterval(iv);
  },280);
 }
-
 function spawnItem(isJunk){
- const imgSrc=isJunk
-  ? junkImages[Math.floor(Math.random()*junkImages.length)]
-  : spawnImagePool.shift();
-
+ const img=isJunk?junkImages[Math.floor(Math.random()*junkImages.length)]:spawnImagePool.shift();
  items.push({
-   number:Math.floor(Math.random()*99)+1,
+   number:Math.floor(Math.random()*90)+10,
    isJunk,
-   img:imgSrc,
+   img,
    x:Math.random()*(innerWidth-200)+100,
    y:-60,
    size:80,
-   speedDown:300,
-   speedUp:-360,
+   speed:300,
    turnY:innerHeight*0.55,
    phase:'down',
    alive:true
  });
 }
 
-/* ================= INPUT (shared) ================= */
+/* ================= INPUT ================= */
 function handleNumberInput(d){
  if(state!=='game')return;
  inputBuffer+=d;
+ inputDisplay.textContent=inputBuffer;
+
  clearTimeout(inputTimer);
  inputTimer=setTimeout(()=>{
-   const num=parseInt(inputBuffer); inputBuffer='';
+   const num=parseInt(inputBuffer);
+   inputBuffer='';
+   inputDisplay.textContent='';
    for(let it of items){
      if(it.alive&&it.number===num){
-       explode(it.x,it.y,it.isJunk?'#ff4444':'#00ffcc');
        it.phase='up';
-       if(it.isJunk){
-         hearts--; updateHearts(); shake=15; redFlash=10;
-         if(hearts<=0) showSummary();
-       }else{
-         collectCurrent(it.img);
-         items.forEach(i=>i.phase='up');
-       }
        break;
      }
    }
  },350);
 }
+
 window.addEventListener('keydown',e=>{
  if(/^\d$/.test(e.key)) handleNumberInput(e.key);
 });
@@ -223,32 +230,25 @@ for(let i=0;i<=9;i++){
  const b=document.createElement('div');
  b.className='numBtn';
  b.textContent=i;
- b.onclick=()=>handleNumberInput(String(i));
+ b.onclick=()=>{
+   b.classList.add('active');
+   handleNumberInput(String(i));
+   setTimeout(()=>b.classList.remove('active'),150);
+ };
  numPad.appendChild(b);
 }
 
-/* ================= UPDATE & DRAW ================= */
-function explode(x,y,color){
- for(let i=0;i<12;i++)
- particles.push({x,y,vx:(Math.random()-0.5)*300,vy:(Math.random()-0.5)*300,life:.4,color});
-}
-
+/* ================= LOOP ================= */
 function update(dt){
  if(state!=='game')return;
  items.forEach(it=>{
    if(!it.alive)return;
-   it.y+= (it.phase==='down'?it.speedDown:it.speedUp)*dt;
+   it.y+= (it.phase==='down'?it.speed:-it.speed)*dt;
    if(it.phase==='down'&&it.y>it.turnY)it.phase='up';
    if(it.y<-120)it.alive=false;
  });
- particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=600*dt;p.life-=dt});
- particles=particles.filter(p=>p.life>0);
- if(items.length&&!items.some(i=>i.alive)){
-   if(!collected[current.key]) queue.push(current);
-   nextCategory();
- }
+ if(items.length&&!items.some(i=>i.alive)) nextCategory();
 }
-
 function draw(){
  ctx.clearRect(0,0,innerWidth,innerHeight);
  if(state!=='game')return;
@@ -256,72 +256,34 @@ function draw(){
    if(!it.alive)return;
    const h=it.size/2;
    ctx.drawImage(imageCache[it.img],it.x-h,it.y-h,it.size,it.size);
-   if(it.isJunk){
-     ctx.strokeStyle='red'; ctx.lineWidth=4;
-     ctx.strokeRect(it.x-h,it.y-h,it.size,it.size);
-   }
-   ctx.fillStyle=it.isJunk?'#ff4444':'#fff';
-   ctx.font='bold 20px sans-serif';
+   ctx.fillStyle='#fff';
    ctx.textAlign='center';
+   ctx.font='20px sans-serif';
    ctx.fillText(it.number,it.x,it.y+h+28);
  });
 }
-
-/* ================= FLOW ================= */
-function collectCurrent(img){
- if(collected[current.key])return;
- collected[current.key]={img};
- const d=document.createElement('div');
- d.className='itemCard';
- const im=document.createElement('img');
- im.src=img;
- d.appendChild(im);
- bottomBar.appendChild(d);
-}
-function nextCategory(){
- if(queue.length===0) showSummary();
- else{ current=queue.shift(); spawnScene(); }
-}
-function showSummary(){
- state='summary';
- summary.style.display='flex';
- summaryList.innerHTML='';
- Object.values(collected).forEach(c=>{
-  const d=document.createElement('div');
-  d.className='itemCard';
-  const im=document.createElement('img');
-  im.src=c.img;
-  d.appendChild(im);
-  summaryList.appendChild(d);
- });
-}
-function updateHearts(){
- topBar.textContent='❤️'.repeat(hearts)+'🤍'.repeat(MAX_HEARTS-hearts);
-}
-
-/* ================= START ================= */
-startBtn.onclick=()=>{
- state='game';
- startScreen.style.display='none';
- hearts=MAX_HEARTS;
- collected={};
- bottomBar.innerHTML='';
- queue=[...categories];
- updateHearts();
- nextCategory();
-};
-restartBtn.onclick=()=>location.reload();
-
-/* ================= LOOP ================= */
 let last=performance.now();
 function loop(t){
- const dt=(t-last)/1000;
- last=t;
- update(dt);
- draw();
+ const dt=(t-last)/1000; last=t;
+ update(dt); draw();
  requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
+
+/* ================= FLOW ================= */
+function nextCategory(){
+ if(queue.length===0){state='summary';summary.style.display='flex';return;}
+ current=queue.shift();
+ spawnScene();
+}
+startBtn.onclick=()=>{
+ state='game';
+ startScreen.style.display='none';
+ mobileUI.style.display='flex'; // 👈 โชว์ปุ่มมือถือ
+ queue=[...categories];
+ nextCategory();
+};
+restartBtn.onclick=()=>location.reload();
 </script>
 </body>
 </html>
