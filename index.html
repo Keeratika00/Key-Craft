@@ -62,6 +62,31 @@ canvas{
   left:12px;
   font-size:22px;
 }
+
+/* ===== Mobile Number Pad ===== */
+#numPad{
+  position:fixed;
+  bottom:140px;
+  left:0; right:0;
+  display:grid;
+  grid-template-columns:repeat(5,60px);
+  gap:10px;
+  justify-content:center;
+}
+.numBtn{
+  width:60px;
+  height:60px;
+  border-radius:14px;
+  background:#333;
+  color:#fff;
+  font-size:22px;
+  font-weight:700;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  user-select:none;
+}
+.numBtn:active{ background:#1e90ff; }
 </style>
 </head>
 
@@ -73,12 +98,13 @@ canvas{
 <div id="startScreen">
   <div style="text-align:center">
     <h1>Key & Craft</h1>
-    <p>กดตัวเลขบนอุปกรณ์เพื่อเลือก</p>
+    <p>กดตัวเลขเพื่อเลือกอุปกรณ์</p>
     <div class="button" id="startBtn">เริ่มเกม</div>
   </div>
 </div>
 
 <div id="bottomBar"></div>
+<div id="numPad"></div>
 
 <div id="summary" style="display:none">
   <div style="text-align:center">
@@ -108,43 +134,19 @@ window.onresize = resize;
 
 /* ================= DATA ================= */
 const categories = [
- {key:'Mouse',label:'Mouse',imgs:[
-  'images/mouse/mouse1.png','images/mouse/mouse2.png',
-  'images/mouse/mouse3.png','images/mouse/mouse4.png','images/mouse/mouse5.png'
- ]},
- {key:'Keyboard',label:'Keyboard',imgs:[
-  'images/keyboard/kb1.png','images/keyboard/kb2.png',
-  'images/keyboard/kb3.png','images/keyboard/kb4.png','images/keyboard/kb5.png'
- ]},
- {key:'Mousepad',label:'Mousepad',imgs:[
-  'images/mousepad/mp1.png','images/mousepad/mp2.png',
-  'images/mousepad/mp3.png','images/mousepad/mp4.png','images/mousepad/mp5.png'
- ]},
- {key:'Headset',label:'Headset',imgs:[
-  'images/headset/hs1.png','images/headset/hs2.png',
-  'images/headset/hs3.png','images/headset/hs4.png','images/headset/hs5.png'
- ]},
- {key:'Controller',label:'Controller',imgs:[
-  'images/controller/ct1.png','images/controller/ct2.png',
-  'images/controller/ct3.png','images/controller/ct4.png','images/controller/ct5.png'
- ]},
- {key:'Chair',label:'Chair',imgs:[
-  'images/chair/ch1.png','images/chair/ch2.png',
-  'images/chair/ch3.png','images/chair/ch4.png','images/chair/ch5.png'
- ]}
+ {key:'Mouse',imgs:['images/mouse/mouse1.png','images/mouse/mouse2.png','images/mouse/mouse3.png','images/mouse/mouse4.png','images/mouse/mouse5.png']},
+ {key:'Keyboard',imgs:['images/keyboard/kb1.png','images/keyboard/kb2.png','images/keyboard/kb3.png','images/keyboard/kb4.png','images/keyboard/kb5.png']},
+ {key:'Mousepad',imgs:['images/mousepad/mp1.png','images/mousepad/mp2.png','images/mousepad/mp3.png','images/mousepad/mp4.png','images/mousepad/mp5.png']},
+ {key:'Headset',imgs:['images/headset/hs1.png','images/headset/hs2.png','images/headset/hs3.png','images/headset/hs4.png','images/headset/hs5.png']},
+ {key:'Controller',imgs:['images/controller/ct1.png','images/controller/ct2.png','images/controller/ct3.png','images/controller/ct4.png','images/controller/ct5.png']},
+ {key:'Chair',imgs:['images/chair/ch1.png','images/chair/ch2.png','images/chair/ch3.png','images/chair/ch4.png','images/chair/ch5.png']}
 ];
+const junkImages=['images/junk/junk1.png','images/junk/junk2.png'];
 
-const junkImages=[
- 'images/junk/junk1.png',
- 'images/junk/junk2.png'
-];
-
-/* preload images */
+/* preload */
 const imageCache={};
 [...categories.flatMap(c=>c.imgs),...junkImages].forEach(src=>{
- const img=new Image();
- img.src=src;
- imageCache[src]=img;
+ const img=new Image(); img.src=src; imageCache[src]=img;
 });
 
 /* ================= STATE ================= */
@@ -157,15 +159,10 @@ let particles=[],shake=0,redFlash=0;
 let spawnImagePool=[];
 
 /* ================= SPAWN ================= */
-function randomFrom(arr){
- return arr[Math.floor(Math.random()*arr.length)];
-}
-
 function spawnScene(){
  items=[];
- let count=0;
  spawnImagePool=[...current.imgs].sort(()=>Math.random()-0.5);
-
+ let count=0;
  const iv=setInterval(()=>{
    spawnItem(Math.random()<0.4);
    count++;
@@ -174,9 +171,9 @@ function spawnScene(){
 }
 
 function spawnItem(isJunk){
- let imgSrc = isJunk
-   ? randomFrom(junkImages)
-   : (spawnImagePool.length ? spawnImagePool.shift() : randomFrom(current.imgs));
+ const imgSrc=isJunk
+  ? junkImages[Math.floor(Math.random()*junkImages.length)]
+  : spawnImagePool.shift();
 
  items.push({
    number:Math.floor(Math.random()*99)+1,
@@ -185,113 +182,28 @@ function spawnItem(isJunk){
    x:Math.random()*(innerWidth-200)+100,
    y:-60,
    size:80,
-   speedDown: Math.random()*200 + 240,   // 👈 ตกลง (px / sec)
-   speedUp:  -(Math.random()*240 + 260), // 👈 ลอยขึ้น (px / sec)
-   turnY:innerHeight*(Math.random()*0.2+0.45),
+   speedDown:300,
+   speedUp:-360,
+   turnY:innerHeight*0.55,
    phase:'down',
    alive:true
  });
 }
 
-/* ================= EFFECT ================= */
-function explode(x,y,color){
- for(let i=0;i<16;i++){
-   particles.push({
-     x,y,
-     vx:(Math.random()-0.5)*360,
-     vy:(Math.random()-0.5)*360,
-     life:0.5,
-     color
-   });
- }
-}
-
-/* ================= UPDATE ================= */
-function update(dt){
+/* ================= INPUT (shared) ================= */
+function handleNumberInput(d){
  if(state!=='game')return;
-
- items.forEach(it=>{
-   if(!it.alive)return;
-   it.y += (it.phase==='down'?it.speedDown:it.speedUp)*dt;
-   if(it.phase==='down'&&it.y>it.turnY)it.phase='up';
-   if(it.y<-120)it.alive=false;
- });
-
- particles.forEach(p=>{
-   p.x+=p.vx*dt;
-   p.y+=p.vy*dt;
-   p.vy+=800*dt;
-   p.life-=dt;
- });
- particles=particles.filter(p=>p.life>0);
-
- if(shake>0)shake-=dt*60;
- if(redFlash>0)redFlash-=dt*60;
-
- if(items.length&&!items.some(i=>i.alive)){
-   if(!collected[current.key])queue.push(current);
-   nextCategory();
- }
-}
-
-/* ================= DRAW ================= */
-function draw(){
- ctx.clearRect(0,0,innerWidth,innerHeight);
- if(state!=='game')return;
-
- if(shake>0){
-   ctx.save();
-   ctx.translate(Math.random()*8-4,Math.random()*8-4);
- }
-
- items.forEach(it=>{
-   if(!it.alive)return;
-   const img=imageCache[it.img];
-   const h=it.size/2;
-
-   if(img && img.complete && img.naturalWidth){
-     ctx.drawImage(img,it.x-h,it.y-h,it.size,it.size);
-     if(it.isJunk){
-       ctx.strokeStyle='red';
-       ctx.lineWidth=4;
-       ctx.strokeRect(it.x-h,it.y-h,it.size,it.size);
-     }
-   }
-
-   ctx.fillStyle=it.isJunk?'#ff4444':'#fff';
-   ctx.font='bold 20px sans-serif';
-   ctx.textAlign='center';
-   ctx.fillText(it.number,it.x,it.y+h+28);
- });
-
- particles.forEach(p=>{
-   ctx.fillStyle=p.color;
-   ctx.fillRect(p.x,p.y,4,4);
- });
-
- if(shake>0)ctx.restore();
- if(redFlash>0){
-   ctx.strokeStyle='rgba(255,0,0,0.5)';
-   ctx.lineWidth=10;
-   ctx.strokeRect(0,0,innerWidth,innerHeight);
- }
-}
-
-/* ================= INPUT ================= */
-window.addEventListener('keydown',e=>{
- if(state!=='game'||!/^\d$/.test(e.key))return;
- inputBuffer+=e.key;
+ inputBuffer+=d;
  clearTimeout(inputTimer);
-
  inputTimer=setTimeout(()=>{
-   const num=parseInt(inputBuffer);inputBuffer='';
+   const num=parseInt(inputBuffer); inputBuffer='';
    for(let it of items){
      if(it.alive&&it.number===num){
        explode(it.x,it.y,it.isJunk?'#ff4444':'#00ffcc');
        it.phase='up';
        if(it.isJunk){
-         hearts--;updateHearts();shake=15;redFlash=10;
-         if(hearts<=0)showSummary();
+         hearts--; updateHearts(); shake=15; redFlash=10;
+         if(hearts<=0) showSummary();
        }else{
          collectCurrent(it.img);
          items.forEach(i=>i.phase='up');
@@ -300,40 +212,89 @@ window.addEventListener('keydown',e=>{
      }
    }
  },350);
+}
+window.addEventListener('keydown',e=>{
+ if(/^\d$/.test(e.key)) handleNumberInput(e.key);
 });
+
+/* mobile buttons */
+const numPad=document.getElementById('numPad');
+for(let i=0;i<=9;i++){
+ const b=document.createElement('div');
+ b.className='numBtn';
+ b.textContent=i;
+ b.onclick=()=>handleNumberInput(String(i));
+ numPad.appendChild(b);
+}
+
+/* ================= UPDATE & DRAW ================= */
+function explode(x,y,color){
+ for(let i=0;i<12;i++)
+ particles.push({x,y,vx:(Math.random()-0.5)*300,vy:(Math.random()-0.5)*300,life:.4,color});
+}
+
+function update(dt){
+ if(state!=='game')return;
+ items.forEach(it=>{
+   if(!it.alive)return;
+   it.y+= (it.phase==='down'?it.speedDown:it.speedUp)*dt;
+   if(it.phase==='down'&&it.y>it.turnY)it.phase='up';
+   if(it.y<-120)it.alive=false;
+ });
+ particles.forEach(p=>{p.x+=p.vx*dt;p.y+=p.vy*dt;p.vy+=600*dt;p.life-=dt});
+ particles=particles.filter(p=>p.life>0);
+ if(items.length&&!items.some(i=>i.alive)){
+   if(!collected[current.key]) queue.push(current);
+   nextCategory();
+ }
+}
+
+function draw(){
+ ctx.clearRect(0,0,innerWidth,innerHeight);
+ if(state!=='game')return;
+ items.forEach(it=>{
+   if(!it.alive)return;
+   const h=it.size/2;
+   ctx.drawImage(imageCache[it.img],it.x-h,it.y-h,it.size,it.size);
+   if(it.isJunk){
+     ctx.strokeStyle='red'; ctx.lineWidth=4;
+     ctx.strokeRect(it.x-h,it.y-h,it.size,it.size);
+   }
+   ctx.fillStyle=it.isJunk?'#ff4444':'#fff';
+   ctx.font='bold 20px sans-serif';
+   ctx.textAlign='center';
+   ctx.fillText(it.number,it.x,it.y+h+28);
+ });
+}
 
 /* ================= FLOW ================= */
 function collectCurrent(img){
  if(collected[current.key])return;
  collected[current.key]={img};
- const card=document.createElement('div');
- card.className='itemCard';
+ const d=document.createElement('div');
+ d.className='itemCard';
  const im=document.createElement('img');
  im.src=img;
- card.appendChild(im);
- bottomBar.appendChild(card);
+ d.appendChild(im);
+ bottomBar.appendChild(d);
 }
-
 function nextCategory(){
- if(queue.length===0){showSummary();return;}
- current=queue.shift();
- spawnScene();
+ if(queue.length===0) showSummary();
+ else{ current=queue.shift(); spawnScene(); }
 }
-
 function showSummary(){
  state='summary';
  summary.style.display='flex';
  summaryList.innerHTML='';
  Object.values(collected).forEach(c=>{
-   const d=document.createElement('div');
-   d.className='itemCard';
-   const im=document.createElement('img');
-   im.src=c.img;
-   d.appendChild(im);
-   summaryList.appendChild(d);
+  const d=document.createElement('div');
+  d.className='itemCard';
+  const im=document.createElement('img');
+  im.src=c.img;
+  d.appendChild(im);
+  summaryList.appendChild(d);
  });
 }
-
 function updateHearts(){
  topBar.textContent='❤️'.repeat(hearts)+'🤍'.repeat(MAX_HEARTS-hearts);
 }
@@ -364,13 +325,3 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
-
-
-
-
-
-
-
-
-
-
