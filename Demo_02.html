@@ -1,0 +1,364 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Key & Craft</title>
+
+<style>
+html,body{
+  margin:0;
+  height:100%;
+  background:#111;
+  color:#fff;
+  font-family:sans-serif
+}
+canvas{
+  display:block;
+  background:linear-gradient(#0b2340,#041020)
+}
+#startScreen,#summary{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#000c;
+}
+.button{
+  background:#1e90ff;
+  padding:12px 26px;
+  border-radius:10px;
+  font-weight:700;
+  cursor:pointer;
+  margin-top:16px;
+}
+#bottomBar{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  height:120px;
+  display:flex;
+  gap:12px;
+  justify-content:center;
+  align-items:center;
+  pointer-events:none;
+}
+.itemCard{
+  width:90px;
+  height:90px;
+  border-radius:16px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:#222;
+}
+.itemCard img{
+  width:70px;
+  height:70px;
+}
+#topBar{
+  position:fixed;
+  top:12px;
+  left:12px;
+  font-size:22px;
+}
+</style>
+</head>
+
+<body>
+
+<canvas id="c"></canvas>
+<div id="topBar"></div>
+
+<div id="startScreen">
+  <div style="text-align:center">
+    <h1>Key & Craft</h1>
+    <p>กดตัวเลขบนอุปกรณ์เพื่อเลือก</p>
+    <div class="button" id="startBtn">เริ่มเกม</div>
+  </div>
+</div>
+
+<div id="bottomBar"></div>
+
+<div id="summary" style="display:none">
+  <div style="text-align:center">
+    <h2>อุปกรณ์ที่เลือกทั้งหมด</h2>
+    <div id="summaryList"
+      style="display:flex;gap:16px;flex-wrap:wrap;justify-content:center">
+    </div>
+    <div class="button" id="restartBtn">เริ่มใหม่</div>
+  </div>
+</div>
+
+<script>
+/* ================= SETUP ================= */
+const canvas = document.getElementById('c');
+const ctx = canvas.getContext('2d');
+function resize(){
+  canvas.width = innerWidth;
+  canvas.height = innerHeight;
+}
+resize();
+window.onresize = resize;
+
+/* ================= DATA ================= */
+const categories = [
+ {key:'Mouse',label:'Mouse',imgs:[
+  'images/mouse/mouse1.png','images/mouse/mouse2.png',
+  'images/mouse/mouse3.png','images/mouse/mouse4.png','images/mouse/mouse5.png'
+ ]},
+ {key:'Keyboard',label:'Keyboard',imgs:[
+  'images/keyboard/kb1.png','images/keyboard/kb2.png',
+  'images/keyboard/kb3.png','images/keyboard/kb4.png','images/keyboard/kb5.png'
+ ]},
+ {key:'Mousepad',label:'Mousepad',imgs:[
+  'images/mousepad/mp1.png','images/mousepad/mp2.png',
+  'images/mousepad/mp3.png','images/mousepad/mp4.png','images/mousepad/mp5.png'
+ ]},
+ {key:'Headset',label:'Headset',imgs:[
+  'images/headset/hs1.png','images/headset/hs2.png',
+  'images/headset/hs3.png','images/headset/hs4.png','images/headset/hs5.png'
+ ]},
+ {key:'Controller',label:'Controller',imgs:[
+  'images/controller/ct1.png','images/controller/ct2.png',
+  'images/controller/ct3.png','images/controller/ct4.png','images/controller/ct5.png'
+ ]},
+ {key:'Chair',label:'Chair',imgs:[
+  'images/chair/ch1.png','images/chair/ch2.png',
+  'images/chair/ch3.png','images/chair/ch4.png','images/chair/ch5.png'
+ ]}
+];
+
+const junkImages=[
+ 'images/junk/junk1.png',
+ 'images/junk/junk2.png'
+];
+
+/* preload images */
+const imageCache={};
+[...categories.flatMap(c=>c.imgs),...junkImages].forEach(src=>{
+ const img=new Image();
+ img.src=src;
+ imageCache[src]=img;
+});
+
+/* ================= STATE ================= */
+const MAX_HEARTS=3;
+let hearts=MAX_HEARTS;
+let queue=[],current=null,items=[],collected={};
+let state='start';
+let inputBuffer='',inputTimer=null;
+let particles=[],shake=0,redFlash=0;
+
+/* pool กันรูปซ้ำในรอบเดียว */
+let spawnImagePool=[];
+
+/* ================= SPAWN ================= */
+function randomFrom(arr){
+ return arr[Math.floor(Math.random()*arr.length)];
+}
+
+function spawnScene(){
+ items=[];
+ let count=0;
+
+ spawnImagePool=[...current.imgs].sort(()=>Math.random()-0.5);
+
+ const iv=setInterval(()=>{
+   spawnItem(Math.random()<0.4);
+   count++;
+   if(count>=5) clearInterval(iv);
+ },300);
+}
+
+function spawnItem(isJunk){
+ let imgSrc;
+
+ if(isJunk){
+   imgSrc=randomFrom(junkImages);
+ }else{
+   imgSrc=spawnImagePool.length
+     ? spawnImagePool.shift()
+     : randomFrom(current.imgs);
+ }
+
+ items.push({
+   number:Math.floor(Math.random()*99)+1,
+   isJunk,
+   img:imgSrc,
+   x:Math.random()*(canvas.width-200)+100,
+   y:-60,
+   size:80,
+   speedDown:Math.random()*1.7+1.2,
+   speedUp:-(Math.random()*2.8+2.2),
+   turnY:canvas.height*(Math.random()*0.2+0.45),
+   phase:'down',
+   alive:true
+ });
+}
+
+/* ================= EFFECT ================= */
+function explode(x,y,color){
+ for(let i=0;i<16;i++){
+   particles.push({
+     x,y,
+     vx:(Math.random()-0.5)*6,
+     vy:(Math.random()-0.5)*6,
+     life:30,
+     color
+   });
+ }
+}
+
+/* ================= UPDATE ================= */
+function update(){
+ if(state!=='game')return;
+
+ items.forEach(it=>{
+   if(!it.alive)return;
+   it.y+=it.phase==='down'?it.speedDown:it.speedUp;
+   if(it.phase==='down'&&it.y>it.turnY)it.phase='up';
+   if(it.y<-120)it.alive=false;
+ });
+
+ particles.forEach(p=>{
+   p.x+=p.vx;p.y+=p.vy;p.vy+=0.2;p.life--;
+ });
+ particles=particles.filter(p=>p.life>0);
+
+ if(shake>0)shake--;
+ if(redFlash>0)redFlash--;
+
+ if(items.length&&!items.some(i=>i.alive)){
+   if(!collected[current.key])queue.push(current);
+   nextCategory();
+ }
+}
+
+/* ================= DRAW ================= */
+function draw(){
+ ctx.clearRect(0,0,canvas.width,canvas.height);
+ if(state!=='game')return;
+
+ if(shake>0){
+   ctx.save();
+   ctx.translate(Math.random()*8-4,Math.random()*8-4);
+ }
+
+ items.forEach(it=>{
+   if(!it.alive)return;
+
+   const img=imageCache[it.img];
+   const half=it.size/2;
+
+   if(img&&img.complete){
+     ctx.drawImage(img,it.x-half,it.y-half,it.size,it.size);
+
+     /* 🔴 ขอบแดงเฉพาะขยะ */
+     if(it.isJunk){
+       ctx.strokeStyle='red';
+       ctx.lineWidth=4;
+       ctx.strokeRect(it.x-half,it.y-half,it.size,it.size);
+     }
+   }
+
+   /* ตัวเลขใต้รูป */
+   ctx.fillStyle = it.isJunk ? '#ff4444' : '#ffffff';
+   ctx.font='bold 20px sans-serif';
+   ctx.textAlign='center';
+   ctx.fillText(it.number,it.x,it.y + half + 28);
+ });
+
+ particles.forEach(p=>{
+   ctx.fillStyle=p.color;
+   ctx.fillRect(p.x,p.y,4,4);
+ });
+
+ if(shake>0)ctx.restore();
+ if(redFlash>0){
+   ctx.strokeStyle='rgba(255,0,0,0.5)';
+   ctx.lineWidth=10;
+   ctx.strokeRect(0,0,canvas.width,canvas.height);
+ }
+}
+
+/* ================= INPUT ================= */
+window.addEventListener('keydown',e=>{
+ if(state!=='game'||!/^\d$/.test(e.key))return;
+ inputBuffer+=e.key;
+ clearTimeout(inputTimer);
+
+ inputTimer=setTimeout(()=>{
+   const num=parseInt(inputBuffer);inputBuffer='';
+   for(let it of items){
+     if(it.alive&&it.number===num){
+       explode(it.x,it.y,it.isJunk?'#ff4444':'#00ffcc');
+       it.phase='up';
+       if(it.isJunk){
+         hearts--;updateHearts();shake=15;redFlash=10;
+         if(hearts<=0)showSummary();
+       }else{
+         collectCurrent(it.img);
+         items.forEach(i=>i.phase='up');
+       }
+       break;
+     }
+   }
+ },350);
+});
+
+/* ================= FLOW ================= */
+function collectCurrent(img){
+ if(collected[current.key])return;
+ collected[current.key]={img};
+
+ const card=document.createElement('div');
+ card.className='itemCard';
+ const im=document.createElement('img');
+ im.src=img;
+ card.appendChild(im);
+ bottomBar.appendChild(card);
+}
+
+function nextCategory(){
+ if(queue.length===0){showSummary();return;}
+ current=queue.shift();
+ spawnScene();
+}
+
+function showSummary(){
+ state='summary';
+ summary.style.display='flex';
+ summaryList.innerHTML='';
+ Object.values(collected).forEach(c=>{
+   const d=document.createElement('div');
+   d.className='itemCard';
+   const im=document.createElement('img');
+   im.src=c.img;
+   d.appendChild(im);
+   summaryList.appendChild(d);
+ });
+}
+
+function updateHearts(){
+ topBar.textContent='❤️'.repeat(hearts)+'🤍'.repeat(MAX_HEARTS-hearts);
+}
+
+/* ================= START ================= */
+startBtn.onclick=()=>{
+ state='game';
+ startScreen.style.display='none';
+ hearts=MAX_HEARTS;
+ collected={};
+ bottomBar.innerHTML='';
+ queue=[...categories];
+ updateHearts();
+ nextCategory();
+};
+restartBtn.onclick=()=>location.reload();
+
+function loop(){update();draw();requestAnimationFrame(loop);}
+loop();
+</script>
+</body>
+</html>
