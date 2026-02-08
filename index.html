@@ -12,7 +12,7 @@
     background: #111;
     color: #fff;
     font-family: sans-serif;
-    overflow: hidden; /* ป้องกันการเลื่อนหน้าจอบนมือถือ */
+    overflow: hidden;
     touch-action: none;
   }
   canvas {
@@ -20,7 +20,6 @@
     background: linear-gradient(#0b2340, #041020);
   }
 
-  /* หน้าจอเริ่มและหน้าสรุป */
   #startScreen, #summary {
     position: fixed;
     inset: 0;
@@ -40,23 +39,23 @@
     margin-top: 16px;
   }
 
-  /* ส่วนควบคุมด้านล่าง (Mobile Numpad + Inventory) */
+  /* ส่วนควบคุมด้านล่าง */
   #controls {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     background: #1a1a1a;
-    padding: 10px;
+    padding: 15px 10px;
     display: flex;
     flex-direction: column;
-    gap: 10px;
+    gap: 12px;
     border-top: 2px solid #333;
   }
 
   /* แถบโชว์ของที่เก็บได้ (อยู่บนปุ่มเลข) */
   #bottomBar {
-    height: 70px;
+    height: 65px;
     display: flex;
     gap: 10px;
     justify-content: center;
@@ -65,8 +64,8 @@
   }
 
   .itemCard {
-    width: 55px;
-    height: 55px;
+    width: 50px;
+    height: 50px;
     border-radius: 10px;
     display: flex;
     align-items: center;
@@ -75,16 +74,16 @@
     flex-shrink: 0;
   }
   .itemCard img {
-    width: 45px;
-    height: 45px;
+    width: 40px;
+    height: 40px;
   }
 
-  /* ปุ่มกดตัวเลข */
+  /* ปุ่มกดตัวเลขแบบ 3 คอลัมน์ (Mobile Numpad) */
   #numpad {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
-    gap: 8px;
-    max-width: 600px;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    max-width: 300px; /* บีบให้ทรงเหมือนมือถือ */
     margin: 0 auto;
     width: 100%;
   }
@@ -93,10 +92,11 @@
     background: #444;
     color: white;
     border: none;
-    padding: 15px 0;
-    font-size: 22px;
+    height: 60px; /* ความสูงพอดีนิ้ว */
+    font-size: 24px;
     font-weight: bold;
-    border-radius: 8px;
+    border-radius: 12px;
+    box-shadow: 0 4px 0 #222;
     cursor: pointer;
     transition: background 0.1s, transform 0.05s;
     user-select: none;
@@ -107,7 +107,13 @@
   .numBtn.active {
     background: #ffcc00;
     color: #000;
-    transform: scale(0.95);
+    transform: translateY(3px); /* ยุบลงเหมือนกดปุ่มจริง */
+    box-shadow: 0 1px 0 #222;
+  }
+
+  /* วางเลข 0 ไว้ตรงกลางแถวสุดท้าย */
+  .numBtn[data-val="0"] {
+    grid-column: 2;
   }
 
   #topBar {
@@ -128,13 +134,15 @@
 <div id="startScreen">
   <div style="text-align:center">
     <h1>Key & Craft</h1>
-    <p>กดตัวเลขบนจอหรือคีย์บอร์ดเพื่อเลือก</p>
+    <p>จิ้มตัวเลขบนจอเพื่อเก็บอุปกรณ์</p>
     <div class="button" id="startBtn">เริ่มเกม</div>
   </div>
 </div>
 
 <div id="controls">
-  <div id="bottomBar"></div> <div id="numpad"> <button class="numBtn" data-val="1">1</button>
+  <div id="bottomBar"></div> 
+  <div id="numpad"> 
+    <button class="numBtn" data-val="1">1</button>
     <button class="numBtn" data-val="2">2</button>
     <button class="numBtn" data-val="3">3</button>
     <button class="numBtn" data-val="4">4</button>
@@ -210,7 +218,7 @@ function spawnItem(isJunk){
    isJunk, img:imgSrc, x:Math.random()*(innerWidth-100)+50, y:-60, size:70,
    speedDown: Math.random()*150 + 200,
    speedUp: -(Math.random()*200 + 250),
-   turnY: innerHeight * 0.4,
+   turnY: innerHeight * 0.35, // ปรับให้สูงขึ้นนิดนึงไม่ให้บังแผงปุ่ม
    phase:'down', alive:true
  });
 }
@@ -221,11 +229,10 @@ function explode(x,y,color){
  }
 }
 
-/* ================= INPUT HANDLER (หัวใจสำคัญ) ================= */
+/* ================= INPUT HANDLER ================= */
 function handleDigitInput(digit) {
   if(state !== 'game') return;
 
-  // Visual Effect บนปุ่ม
   const btn = document.querySelector(`.numBtn[data-val="${digit}"]`);
   if(btn) {
     btn.classList.add('active');
@@ -238,10 +245,8 @@ function handleDigitInput(digit) {
   inputTimer = setTimeout(() => {
     const num = parseInt(inputBuffer);
     inputBuffer = '';
-    let hit = false;
     for(let it of items){
       if(it.alive && it.number === num){
-        hit = true;
         explode(it.x, it.y, it.isJunk ? '#ff4444' : '#00ffcc');
         it.phase='up';
         if(it.isJunk){
@@ -257,7 +262,6 @@ function handleDigitInput(digit) {
   }, 350);
 }
 
-// ผูกปุ่มบนหน้าจอ
 document.querySelectorAll('.numBtn').forEach(btn => {
   btn.addEventListener('pointerdown', (e) => {
     e.preventDefault();
@@ -265,7 +269,6 @@ document.querySelectorAll('.numBtn').forEach(btn => {
   });
 });
 
-// ผูกคีย์บอร์ด
 window.addEventListener('keydown', e => {
   if(/^\d$/.test(e.key)) handleDigitInput(e.key);
 });
@@ -301,7 +304,7 @@ function draw(){
      if(it.isJunk){ ctx.strokeStyle='red'; ctx.lineWidth=3; ctx.strokeRect(it.x-it.size/2,it.y-it.size/2,it.size,it.size); }
    }
    ctx.fillStyle=it.isJunk?'#ff4444':'#fff';
-   ctx.font='bold 20px sans-serif'; ctx.textAlign='center';
+   ctx.font='bold 22px sans-serif'; ctx.textAlign='center';
    ctx.fillText(it.number, it.x, it.y+it.size/2+25);
  });
  particles.forEach(p=>{ ctx.fillStyle=p.color; ctx.fillRect(p.x,p.y,4,4); });
