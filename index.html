@@ -234,7 +234,7 @@ function spawnItem(isJunk){
   let imgSrc = isJunk ? junkImages[Math.floor(Math.random()*junkImages.length)] : (spawnImagePool.length ? spawnImagePool.shift() : current.imgs[0]);
   
   // ปรับความเร็วตามเปอร์เซ็นต์ความสูงจอ
-  let baseSpeedDown = innerHeight * (Math.random() * 0.12 + 0.18); 
+  let baseSpeedDown = innerHeight * (Math.random() * 0.15 + 0.18); 
   let baseSpeedUp = -(innerHeight * (Math.random() * 0.2 + 0.35));
 
   items.push({
@@ -385,4 +385,5 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
+
 
