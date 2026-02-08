@@ -170,7 +170,7 @@ function spawnScene(){
    spawnItem(Math.random()<0.4);
    count++;
    if(count>=5) clearInterval(iv);
- },150);
+ },250);
 }
 
 function spawnItem(isJunk){
@@ -185,8 +185,8 @@ function spawnItem(isJunk){
    x:Math.random()*(innerWidth-200)+100,
    y:-60,
    size:80,
-   speedDown: Math.random()*600 + 500,
-   speedUp:  -(Math.random()*600 + 650),
+   speedDown: Math.random()*400 + 350,
+   speedUp:  -(Math.random()*400 + 450),
    turnY:innerHeight*(Math.random()*0.2+0.45),
    phase:'down',
    alive:true
@@ -364,5 +364,6 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
+
 
 
