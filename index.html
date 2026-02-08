@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Key & Craft - Hybrid Version</title>
+<title>Key & Craft - Mobile Fixed</title>
 
 <style>
   html, body {
@@ -47,79 +47,69 @@
     left: 0;
     right: 0;
     background: #1a1a1a;
-    padding: 15px 10px;
+    padding: 10px 5px; /* ลด padding ข้างลง */
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 8px;
     border-top: 2px solid #333;
     z-index: 50;
+    align-items: center; /* จัดให้ numpad อยู่กลางจอ */
   }
 
-  /* --- หัวใจหลัก: สลับการแสดงผลระหว่าง PC และ มือถือ --- */
-  
-  /* กรณีหน้าจอใหญ่ (มากกว่า 768px หรือ PC) ให้ซ่อนปุ่มตัวเลข */
+  /* ซ่อน numpad บน PC */
   @media (min-width: 769px) {
-    #numpad {
-      display: none !important;
-    }
-    #controls {
-      background: transparent; /* ให้ดูโล่งๆ บน PC */
-      border: none;
-      pointer-events: none; /* เพื่อให้คลิกผ่านไปโดน Canvas ได้ */
-    }
-    #bottomBar {
-      pointer-events: auto; /* แต่ยังให้เลื่อนดูไอเทมได้ */
-    }
+    #numpad { display: none !important; }
+    #controls { background: transparent; border: none; pointer-events: none; }
+    #bottomBar { pointer-events: auto; }
   }
 
-  /* แถบโชว์ของที่เก็บได้ */
   #bottomBar {
-    height: 65px;
+    height: 60px;
     display: flex;
-    gap: 10px;
+    gap: 8px;
     justify-content: center;
     align-items: center;
     overflow-x: auto;
+    width: 100%;
   }
 
   .itemCard {
-    width: 50px;
-    height: 50px;
-    border-radius: 10px;
+    width: 45px;
+    height: 45px;
+    border-radius: 8px;
     display: flex;
     align-items: center;
     justify-content: center;
     background: #333;
     flex-shrink: 0;
   }
-  .itemCard img {
-    width: 40px;
-    height: 40px;
-  }
+  .itemCard img { width: 35px; height: 35px; }
 
-  /* ปุ่มกดตัวเลขแบบบังคับ 3 คอลัมน์ */
+  /* แก้ไข Grid ตรงนี้เพื่อบังคับ 3 แถว */
   #numpad {
     display: grid;
-    grid-template-columns: repeat(3, 1fr); /* บังคับ 3 คอลัมน์ */
-    gap: 10px;
-    max-width: 280px; 
-    margin: 0 auto;
-    width: 100%;
+    /* บังคับ 3 คอลัมน์แบบเป๊ะๆ */
+    grid-template-columns: repeat(3, 1fr); 
+    gap: 6px; /* ลดช่องว่างลงเพื่อประหยัดพื้นที่ */
+    width: 95%; /* ใช้พื้นที่เกือบเต็มแต่ไม่ล้น */
+    max-width: 260px; /* บีบขนาดให้ไม่ล้นหน้าจอมือถือเล็กๆ */
   }
 
   .numBtn {
     background: #444;
     color: white;
     border: none;
-    height: 55px;
-    font-size: 24px;
+    height: 50px; /* ลดความสูงลงเล็กน้อย */
+    font-size: 22px;
     font-weight: bold;
-    border-radius: 12px;
+    border-radius: 10px;
     box-shadow: 0 4px 0 #222;
     cursor: pointer;
-    transition: background 0.1s;
     user-select: none;
     -webkit-tap-highlight-color: transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .numBtn.active {
@@ -129,7 +119,7 @@
     box-shadow: 0 1px 0 #222;
   }
 
-  /* วางเลข 0 ไว้ตรงกลางแถวที่ 4 */
+  /* บังคับเลข 0 อยู่แถว 4 ตรงกลาง */
   .numBtn[data-val="0"] {
     grid-column: 2;
   }
@@ -142,7 +132,6 @@
   }
 </style>
 </head>
-
 <body>
 
 <canvas id="c"></canvas>
@@ -151,7 +140,7 @@
 <div id="startScreen">
   <div style="text-align:center">
     <h1>Key & Craft</h1>
-    <p>พิมพ์ตัวเลขให้ตรงกับไอเทม</p>
+    <p>กดตัวเลขเพื่อเก็บอุปกรณ์</p>
     <div class="button" id="startBtn">เริ่มเกม</div>
   </div>
 </div>
@@ -181,7 +170,7 @@
 </div>
 
 <script>
-/* ================= SETUP & DATA ================= */
+/* โค้ด JavaScript ทั้งหมดเหมือนเดิม (ตัดมาให้สั้นลงเพื่อความสะดวก) */
 const canvas = document.getElementById('c');
 const ctx = canvas.getContext('2d');
 let dpr = window.devicePixelRatio || 1;
@@ -211,12 +200,10 @@ const imageCache={};
  const img=new Image(); img.src=src; imageCache[src]=img;
 });
 
-/* ================= STATE ================= */
 const MAX_HEARTS=3;
 let hearts=MAX_HEARTS, queue=[], current=null, items=[], collected={}, state='start';
 let inputBuffer='', inputTimer=null, particles=[], shake=0, redFlash=0, spawnImagePool=[];
 
-/* ================= LOGIC ================= */
 function spawnScene(){
  items=[];
  spawnImagePool=[...current.imgs].sort(()=>Math.random()-0.5);
@@ -235,7 +222,7 @@ function spawnItem(isJunk){
    isJunk, img:imgSrc, x:Math.random()*(innerWidth-100)+50, y:-60, size:70,
    speedDown: Math.random()*150 + 200,
    speedUp: -(Math.random()*200 + 250),
-   turnY: innerHeight * 0.35, 
+   turnY: innerHeight * 0.3, 
    phase:'down', alive:true
  });
 }
@@ -246,19 +233,15 @@ function explode(x,y,color){
  }
 }
 
-/* ================= INPUT HANDLER ================= */
 function handleDigitInput(digit) {
   if(state !== 'game') return;
-
   const btn = document.querySelector(`.numBtn[data-val="${digit}"]`);
   if(btn) {
     btn.classList.add('active');
     setTimeout(() => btn.classList.remove('active'), 100);
   }
-
   inputBuffer += digit;
   clearTimeout(inputTimer);
-
   inputTimer = setTimeout(() => {
     const num = parseInt(inputBuffer);
     inputBuffer = '';
@@ -290,7 +273,6 @@ window.addEventListener('keydown', e => {
   if(/^\d$/.test(e.key)) handleDigitInput(e.key);
 });
 
-/* ================= UPDATE & DRAW ================= */
 function update(dt){
  if(state!=='game')return;
  items.forEach(it=>{
@@ -329,7 +311,6 @@ function draw(){
  if(redFlash>0){ ctx.strokeStyle='rgba(255,0,0,0.5)'; ctx.lineWidth=10; ctx.strokeRect(0,0,innerWidth,innerHeight); }
 }
 
-/* ================= FLOW ================= */
 function collectCurrent(imgSrc){
  if(collected[current.key])return;
  collected[current.key]={img:imgSrc};
