@@ -20,7 +20,6 @@
     background: linear-gradient(#0b2340, #041020);
   }
 
-  /* หน้าจอเริ่มและหน้าสรุป */
   #startScreen, #summary {
     position: fixed;
     inset: 0;
@@ -40,48 +39,45 @@
     margin-top: 16px;
   }
 
-  /* ส่วนควบคุมด้านล่าง */
+  /* --- ปรับปรุงให้ Compact ขึ้น --- */
   #controls {
     position: fixed;
     bottom: 0;
     left: 0;
     right: 0;
     background: #1a1a1a;
-    padding: 10px 5px;
+    padding: 6px 5px; /* ลดความหนาของขอบแผง */
     display: flex;
     flex-direction: column;
-    gap: 8px;
-    border-top: 2px solid #333;
+    gap: 4px; /* ลดช่องว่างระหว่าง Inventory กับ Numpad */
+    border-top: 1px solid #333;
     z-index: 50;
     align-items: center;
   }
 
-  /* หัวใจ (Top Bar) */
   #topBar {
     position: fixed;
-    top: 12px;
+    top: 10px;
     left: 12px;
-    font-size: 22px;
+    font-size: 20px;
     text-shadow: 1px 1px 2px #000;
     z-index: 10;
   }
 
-  /* แถบโชว์ของที่เก็บได้ */
   #bottomBar {
-    height: 65px;
+    height: 50px; /* ลดความสูงแถบไอเทมลง */
     display: flex;
-    gap: 8px;
+    gap: 6px;
     justify-content: center;
     align-items: center;
     overflow-x: auto;
     width: 100%;
   }
 
-  /* ไอเทมการ์ด (Inventory) */
   .itemCard {
-    width: 50px;
-    height: 50px;
-    border-radius: 10px;
+    width: 40px; /* ลดขนาดกรอบไอเทมลงนิดนึง */
+    height: 40px;
+    border-radius: 6px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -89,18 +85,17 @@
     flex-shrink: 0;
   }
   .itemCard img {
-    width: 40px;
-    height: 40px;
+    width: 32px;
+    height: 32px;
     object-fit: contain;
   }
 
-  /* Numpad บังคับ 3 คอลัมน์ (Mobile) */
   #numpad {
     display: grid !important;
     grid-template-columns: repeat(3, 1fr) !important;
-    gap: 10px !important;
+    gap: 6px !important; /* ปุ่มชิดกันมากขึ้น */
     width: 100% !important;
-    max-width: 280px !important;
+    max-width: 250px !important; /* บีบให้แคบลงอีกนิด */
     margin: 0 auto !important;
   }
 
@@ -108,11 +103,11 @@
     background: #444;
     color: white;
     border: none;
-    height: 55px;
-    font-size: 24px;
+    height: 42px; /* ลดความสูงปุ่มลงพอสมควร */
+    font-size: 20px; /* ลดขนาดตัวเลขบนปุ่ม */
     font-weight: bold;
-    border-radius: 12px;
-    box-shadow: 0 4px 0 #222;
+    border-radius: 8px;
+    box-shadow: 0 3px 0 #222; /* ลดเงาให้เข้ากับขนาด */
     cursor: pointer;
     transition: background 0.1s;
     user-select: none;
@@ -122,7 +117,7 @@
   .numBtn.active {
     background: #ffcc00 !important;
     color: #000 !important;
-    transform: translateY(3px);
+    transform: translateY(2px);
     box-shadow: 0 1px 0 #222;
   }
 
@@ -130,10 +125,10 @@
     grid-column: 2;
   }
 
-  /* --- การปรับแต่งสำหรับ PC (จอใหญ่กว่า 768px) --- */
+  /* --- PC Sizing (ให้ใหญ่เหมือนเดิม) --- */
   @media (min-width: 769px) {
     #numpad { display: none !important; }
-    #controls { background: transparent; border: none; pointer-events: none; }
+    #controls { background: transparent; border: none; pointer-events: none; padding: 0; }
     #topBar { top: 20px; left: 20px; font-size: 45px; }
     #bottomBar { height: 140px; pointer-events: auto; }
     .itemCard { width: 110px; height: 110px; }
@@ -385,6 +380,7 @@ requestAnimationFrame(loop);
 </script>
 </body>
 </html>
+
 
 
 
